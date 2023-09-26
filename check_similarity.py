@@ -68,6 +68,9 @@ def img_similarity_result(path1, path2, name):
         psnr_list.append(_psnr)
         ssim_list.append(_ssim)
 
+        # print(_ssim)
+        # print(_mse)
+
 
         sum_mse += _mse
         sum_vif += _vifp
@@ -75,37 +78,48 @@ def img_similarity_result(path1, path2, name):
         sum_ssim += _ssim
 
 
-    r_dict = {"img":imgs_input, 
-              "mse":mse_list, 
-            #   "psnr":psnr_list, 
-              "ssim":ssim_list,
-              "vif":vif_list}
+    # r_dict = {"img":imgs_input, 
+    #           "mse":mse_list, 
+    #         #   "psnr":psnr_list, 
+    #           "ssim":ssim_list,
+    #           "vif":vif_list}
 
-    vif_list = np.array(vif_list)
+    # vif_list = np.array(vif_list)
     
-    vif_var = np.var(vif_list)
+    # vif_var = np.var(vif_list)
 
-    re_vif_list = vif_list / vif_var
+    # re_vif_list = vif_list / vif_var
 
-    r_dict['relative vif'] = re_vif_list
+    # r_dict['relative vif'] = re_vif_list
 
-    re_vif_list_exp = np.exp(re_vif_list) / np.sum(np.exp(re_vif_list))
-    r_dict['relative vif with exp'] = re_vif_list_exp
+    # re_vif_list_exp = np.exp(re_vif_list) / np.sum(np.exp(re_vif_list))
+    # r_dict['relative vif with exp'] = re_vif_list_exp
     
-    path = f'./similarity_result_{name}.csv'
-    df = pd.DataFrame(r_dict)
-    # df = df.transpose()
-    # df.columns = ['mse', 'vif', 'psnr']
-    if not os.path.exists(path):
-        df.to_csv(path, mode="w")
-    else:
-        df.to_csv(path, mode="a", header=False)
+    # path = f'./similarity_result_{name}.csv'
+    # df = pd.DataFrame(r_dict)
+    # # df = df.transpose()
+    # # df.columns = ['mse', 'vif', 'psnr']
+    # if not os.path.exists(path):
+    #     df.to_csv(path, mode="w")
+    # else:
+    #     df.to_csv(path, mode="a", header=False)
 
     print()
     print("MSE: ", sum_mse / len(imgs_input))
     print("VIF: ", sum_vif / len(imgs_input))
-    print("SSIM: ", sum_psnr / len(imgs_input))
-    print("PSNR: ", sum_ssim / len(imgs_input))
+    print("SSIM: ", sum_ssim / len(imgs_input))
+    print("PSNR: ", sum_psnr / len(imgs_input))
+    print()
+    # print("MSE: ", sum_mse )
+    # print("VIF: ", sum_vif )
+    # print("SSIM: ", sum_psnr )
+    # print("PSNR: ", sum_ssim )
+    # print()
+    # print("MSE: ", sum(mse_list) )
+    # print("VIF: ", sum(vif_list) )
+    # print("SSIM: ", sum(ssim_list) )
+    # print("PSNR: ", sum(psnr_list) )
+
 
 
 def img_similarity_result_torch(path1, path2, name):
@@ -130,20 +144,22 @@ def img_similarity_result_torch(path1, path2, name):
         img_out = utils.prepare_image(Image.open(path2 + imgs_output[idx]).convert("L")).to(device)
 
         model_ssim = SSIM(channels=1)
-        model_vif = VIF(channels=1)
+        # model_vif = VIF(channels=1)
 
         _ssim = model_ssim(img_out, img_in, as_loss=False)
-        _vifp = model_vif(img_out, img_in, as_loss=False)
-        print(_vifp)
+        _mse = mse(img_in, img_out)
 
-        # mse_list.append(_mse)
-        vif_list.append(_vifp.cpu())
+        # _vifp = model_vif(img_out, img_in, as_loss=False)
+        # print(_vifp)
+
+        mse_list.append(_mse)
+        # vif_list.append(_vifp.cpu())
         # psnr_list.append(_psnr)
         ssim_list.append(_ssim)
 
 
-        # sum_mse += _mse
-        sum_vif += _vifp
+        sum_mse += _mse
+        # sum_vif += _vifp
         # sum_psnr += _psnr
         sum_ssim += _ssim
 
@@ -154,31 +170,33 @@ def img_similarity_result_torch(path1, path2, name):
               "ssim":ssim_list,
               "vif":vif_list}
 
-    vif_list = np.array(vif_list)
+    # vif_list = np.array(vif_list)
     
-    vif_var = np.var(vif_list)
+    # vif_var = np.var(vif_list)
 
-    re_vif_list = vif_list / vif_var
+    # re_vif_list = vif_list / vif_var
 
-    r_dict['relative vif'] = re_vif_list
+    # r_dict['relative vif'] = re_vif_list
 
-    re_vif_list_exp = np.exp(re_vif_list) / np.sum(np.exp(re_vif_list))
-    r_dict['relative vif with exp'] = re_vif_list_exp
+    # re_vif_list_exp = np.exp(re_vif_list) / np.sum(np.exp(re_vif_list))
+    # r_dict['relative vif with exp'] = re_vif_list_exp
     
-    path = f'./similarity_result_{name}.csv'
-    df = pd.DataFrame(r_dict)
-    # df = df.transpose()
-    # df.columns = ['mse', 'vif', 'psnr']
-    if not os.path.exists(path):
-        df.to_csv(path, mode="w")
-    else:
-        df.to_csv(path, mode="a", header=False)
+    # path = f'./similarity_result_{name}.csv'
+    # df = pd.DataFrame(r_dict)
+    # # df = df.transpose()
+    # # df.columns = ['mse', 'vif', 'psnr']
+    # if not os.path.exists(path):
+    #     df.to_csv(path, mode="w")
+    # else:
+    #     df.to_csv(path, mode="a", header=False)
 
     print()
-    # print("MSE: ", sum_mse / len(imgs_input))
-    print("VIF: ", sum_vif / len(imgs_input))
-    print("SSIM: ", sum_psnr / len(imgs_input))
-    # print("PSNR: ", sum_ssim / len(imgs_input))
+    print("MSE: ", sum_mse / len(imgs_input))
+    # print("VIF: ", sum_vif / len(imgs_input))
+    print("SSIM: ", sum_ssim / len(imgs_input))
+    print()
+
+    # print("PSNR: ", sum_psnr / len(imgs_input))
 
 
 def make_saliency_map(path1, path2):
@@ -261,6 +279,8 @@ if __name__ == '__main__':
     parser.add_argument("-t", "--task", default="no")
     parser.add_argument("-n", "--args_num")
     parser.add_argument("-o", "--order")
+    parser.add_argument("-p", "--path")
+    
 
     arguments = parser.parse_args()
     
@@ -283,12 +303,12 @@ if __name__ == '__main__':
         elif arguments.order == "map":
             make_saliency_map(path_in, path_out)
     elif arguments.task == "no":
-        path_main = f"/home/swcho/AnoDDPM/final-outputs/ARGS={arguments.args_num}/"
+        path_main = arguments.path
 
-        for i in [500]:
+        for i in [400, 500]:
             print(f"step {i} result :")
-            path_in = path_main + f"images_{i}/in/"
-            path_out = path_main + f"images_{i}/out/"
+            path_in = path_main + f"/ARGS={arguments.args_num}/" + f"images_{i}/in/"
+            path_out = path_main + f"/ARGS={arguments.args_num}/" + f"images_{i}/out/"
             if arguments.order == "sim":
                 img_similarity_result(path_in, path_out, i)
             elif arguments.order == "map":

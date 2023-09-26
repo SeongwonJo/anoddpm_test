@@ -10,7 +10,7 @@ from matplotlib import animation
 from torch import optim
 
 import dataset
-import evaluation
+# import evaluation
 from GaussianDiffusion import GaussianDiffusionModel, get_beta_schedule
 from helpers import *
 from UNet import UNetModel, update_ema_params
@@ -151,7 +151,7 @@ def train(training_dataset_loader, testing_dataset_loader, args, resume, device)
 
     save(unet=model, args=args, optimiser=optimiser, final=True, ema=ema)
 
-    evaluation.testing(testing_dataset_loader, diffusion, ema=ema, args=args, model=model)
+    # evaluation.testing(testing_dataset_loader, diffusion, ema=ema, args=args, model=model)
 
 
 def save(final, unet, optimiser, args, ema, loss=0, epoch=0):
@@ -459,6 +459,6 @@ def main():
 if __name__ == '__main__':
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    seed(1)
+    # seed(1)
 
     main()
