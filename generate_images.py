@@ -7,6 +7,8 @@ Output varying figures for paper
 # import sys
 import os
 
+import argparse
+
 from matplotlib import animation, font_manager
 import matplotlib.pyplot as plt
 
@@ -15,26 +17,44 @@ from torchvision import transforms
 import numpy as np
 
 import dataset
-from helpers import gridify_output, load_parameters
+from helpers import gridify_output, load_parameters, load_checkpoint, print_terminal_width_line
 from GaussianDiffusion import GaussianDiffusionModel, get_beta_schedule
 from get_cam_score import make_cam_score
 from UNet import UNetModel
 
 import time
 
+def ArgumentParse():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-y', '--yml_num', required=True, help="number of yml file contains options")
+    parser.add_argument('-i', '--image_path', required=True ,help="need image folder path")
+    parser.add_argument('-d', '--device', default="cuda:0")
+    parser.add_argument('-p', '--pt_path' ,help="need pt file path")
+    parser.add_argument('-m', '--model' ,help="model name of pt file")
+    parser.add_argument('-l', '--lambda_list', required=True ,help="input list of lambda values\nExample : -l 100,200,300", type=str)
+
+    parser.add_argument('--num_iter', default=0, type=int)
+    parser.add_argument('--is_rgb', default=False)
+    parser.add_argument('--seq_setting', required=False, default=None)
+    parser.add_argument('--use_checkpoint', required=False)
+    parser.add_argument('--use_control_matrix', required=False)
+
+    args = parser.parse_args()
+    return args
 
 
 def main():
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    argparse = ArgumentParse()
+    device = torch.device(argparse.device if torch.cuda.is_available() else 'cpu')
 
     plt.set_cmap('gray')
-
-    plt.rcParams['figure.dpi'] = 600
+    plt.rcParams['figure.dpi'] = 400
     # scale_img = lambda img: ((img + 1) * 127.5).clamp(0, 255).to(torch.uint8)
 
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-        # add times new roman to mpl fonts
+    # add times new roman to mpl fonts
     font_path = "./times new roman.ttf"
     font_manager.fontManager.addfont(font_path)
     prop = font_manager.FontProperties(fname=font_path)
@@ -47,10 +67,15 @@ def main():
     :return: selection of videos for dataset of trained model
     """
     # load parameters
-    args, output = load_parameters(device)
-    in_channels = 1
-    if args["dataset"].lower() == "leather":
+    args = load_parameters(argparse.yml_num)
+    output = load_checkpoint(argparse.yml_num, argparse.use_checkpoint, argparse.device)
+
+    args["Batch_Size"] = 1
+
+    if argparse.is_rgb:
         in_channels = 3
+    else :
+        in_channels = 1
 
     # init model, betas and diffusion classes
     unet = UNetModel(
@@ -64,78 +89,60 @@ def main():
             loss_type=args['loss-type'], noise=args["noise_fn"], img_channels=in_channels
             )
     
-    args["Batch_Size"] = 1
     print(args)
     # load checkpoint
     unet.load_state_dict(output["ema"])
     unet.to(device)
     unet.eval()
-    if args["dataset"].lower() == "carpet":
-        d_set = dataset.DAGM("./DATASETS/CARPET/Class1", True)
-    elif args["dataset"].lower() == "leather":
-        d_set = dataset.MVTec(
-                "../dataset/mvtec/leather", anomalous=True, img_size=args["img_size"],
-                rgb=True, include_good=False
-                )
-    elif args["dataset"].lower() == "custom":
-        d_set = dataset.custom(
-                "../data/chest_xray/test/PNEUMONIA/", anomalous=False, img_size=args["img_size"],
-                rgb=False, e_aug = False
-                )
-        # d_set = dataset.custom(
-        #         "./temp/cxr_sample/", anomalous=False, img_size=args["img_size"],
-        #         rgb=False, e_aug = False
-        #         )
-    elif args["dataset"].lower() == "snu":
-        d_set = dataset.custom(
-                "../data/snu_xray-resize/PNEUMONIA/", anomalous=False, img_size=args["img_size"],
-                rgb=False,
-                )
-    elif args["dataset"].lower() == "snu_he":
-        d_set = dataset.custom(
-                "../data/snu_he/PNEUMONIA/", anomalous=False, img_size=args["img_size"],
-                rgb=False,
-                )
-        # d_set = dataset.custom(
-        #         "./temp/snuhe_sample/", anomalous=False, img_size=args["img_size"],
-        #         rgb=False,
-        #         )
-    elif args["dataset"].lower() == "snu_he_p":
-        # d_set = dataset.custom(
-        #         "../data/snu_he_PNEUMONIA/", anomalous=False, img_size=args["img_size"],
-        #         rgb=False,
-        #         )
-        d_set = dataset.custom(
-                "./temp/snuhe_normal_sample/", anomalous=False, img_size=args["img_size"],
-                rgb=False,
-                )
-    elif args["dataset"].lower() == "snu_invert":
-        d_set = dataset.custom(
-                "../data/snu_invert_PNEUMONIA/", anomalous=False, img_size=args["img_size"],
-                rgb=False,
-                )
+    # if args["dataset"].lower() == "leather":
+    #     d_set = dataset.MVTec(
+    #             "../dataset/mvtec/leather", anomalous=True, img_size=args["img_size"],
+    #             rgb=True, include_good=False
+    #             )
+    # elif args["dataset"].lower() == "custom":
+    #     d_set = dataset.custom(
+    #             "../data/chest_xray/test/PNEUMONIA/", anomalous=False, img_size=args["img_size"],
+    #             rgb=False, e_aug = False
+    #             )
+    #     # d_set = dataset.custom(
+    #     #         "./temp/cxr_sample/", anomalous=False, img_size=args["img_size"],
+    #     #         rgb=False, e_aug = False
+    #     #         )
+    # elif args["dataset"].lower() == "snu_he":
+    #     d_set = dataset.custom(
+    #             "../data/snu_he/PNEUMONIA/", anomalous=False, img_size=args["img_size"],
+    #             rgb=False,
+    #             )
+    d_set = dataset.custom(
+        argparse.image_path, img_size=args["img_size"], rgb=False)
 
     loader = dataset.init_dataset_loader(d_set, args)
-    plt.rcParams['figure.dpi'] = 600
 
-    # t_distance = 200
-    args_control_matrix = {
-        "model": "resnet152",
-        "pt_path": "/home/seongwon/PycharmProjects/Test_bench/kaggle_resnet152_gamma.pt"
-        }
+    # args_control_matrix = {
+    #     "model": "resnet152",
+    #     "pt_path": "/home/seongwon/PycharmProjects/Test_bench/snuhe_resnet152_gamma.pt"
+    #     }
+    if argparse.use_control_matrix:
+        args_control_matrix = {
+            "model": argparse.model,
+            "pt_path": argparse.pt_path
+            }
 
-    ##############################
-    use_control_matrix = True
-    seq_setting = None
-    ##############################
+    seq_setting = argparse.seq_setting # defalut : None / see all sequance to input ' --seq_setting "whole" '
 
 
-    t_distance_list = [300]
-    num_iter = 100  # snu_he : 2164  /  kaggle : 390    || snuhe_sample : 9   /   kaggle_sample : 5
+    t_distance_list = [int(item) for item in argparse.lambda_list.split(',')]
+    
+    # snu_he : 2164  /  kaggle : 390    || snuhe_sample : 9   /   kaggle_sample : 5
+    if argparse.num_iter == 0:
+        num_iter = len(d_set)
+    else :
+        num_iter = argparse.num_iter
+
     for t_distance in t_distance_list:
-        print("\n","="*60, "\n")
+        print_terminal_width_line()
         print("\nt_distance set: ", t_distance)
-        print("\n","="*60, "\n")
+        print_terminal_width_line()
         # make directories
         for i in [f'./final-outputs/', f'./final-outputs/ARGS={args["arg_num"]}', f'./final-outputs/ARGS={args["arg_num"]}/images_{t_distance}/']:
             if not os.path.exists(i):
@@ -149,14 +156,16 @@ def main():
 
         # generate 20 videos
         for i in range(num_iter):
-            print("\r"+"generate images : ", f"{i+1} / {num_iter}", end="")
+            # print("\r"+"generate images : ", f"{i+1} / {num_iter}", end="")
+            print_terminal_width_line()
+            print("generate images : ", f"{i+1} / {num_iter}")
 
             new = next(loader)
             img = new["image"].to(device)
 
-            print("\n load img",img.shape)
+            print("\nload img",img.shape)
             
-            if use_control_matrix:
+            if argparse.use_control_matrix:
                 print("\nget cam score ...")
                 control_matrix = make_cam_score(args_control_matrix, "gradcam", img) # args, method, target_img
                 print("\n control matrix",control_matrix.shape)
@@ -192,27 +201,6 @@ def main():
                         t_distance=t_distance, denoise_fn=args["noise_fn"]
                         )
 
-            
-            
-            # plot, animate and save diffusion process
-            # fig, ax = plt.subplots()
-            # plt.axis('off')
-            # imgs = [[ax.imshow(gridify_output(output[x], 1), animated=True)] for x in range(0, len(output), 2)]
-            # ani = animation.ArtistAnimation(
-            #         fig, imgs, interval=25, blit=True,
-            #         repeat_delay=1000
-            #         )
-            # temp = os.listdir(
-            #         f'./final-outputs/ARGS={args["arg_num"]}'
-            #         )
-
-            # output_name = f'./final-outputs/ARGS={args["arg_num"]}/attempt={len(temp) + 1}-sequence.mp4'
-            # ani.save(output_name)
-
-            # plt.close('all')
-            # print(len(output))
-
-
             # savedir set
             temp2 = os.listdir(
                     f'./final-outputs/ARGS={args["arg_num"]}/images_{t_distance}/in/'
@@ -221,16 +209,8 @@ def main():
             output_name2 = f'./final-outputs/ARGS={args["arg_num"]}/images_{t_distance}'
             output_name3 = f'/attempt={len(temp2)}'
 
-            # save gif
-            # print("\n saving gif ... \n")
-
-            # from list
-            # _save_list = [19, 57, 91, 201, 282] # kaggle
-            # if len(temp2) in _save_list:
-            #     img_list = []
-            #     for out in output:
-            #         img_list.append(gridify_output(out, 1))
-            #     imageio.mimsave(output_name2 + output_name3 + ".gif", img_list, 'GIF', duration=0.1)
+            # save gif (when --seq_setting "whole")
+            # print("\nsaving gif ... \n")
 
             # use every image
             # img_list = []
@@ -239,10 +219,8 @@ def main():
             # imageio.mimsave(output_name2 + output_name3 + ".gif", img_list, 'GIF', duration=0.1)
 
 
-            # just image
-            # print("\n saving final image ... \n")
-            # print(output)
-            
+            # save image
+            print("\nsaving input & output image ... \n")
             
             plt.imsave(output_name2 + '/in/' + output_name3 + "-in0.png", np.uint8(gridify_output(output[0], 1)))
 
@@ -262,6 +240,5 @@ if __name__ == '__main__':
     start_time = time.time()
 
     main()
-    print("image generated")
 
-    print(f"script done: {time.time() - start_time:.2f}s")
+    print(f"image generated done: {time.time() - start_time:.2f}s")

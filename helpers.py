@@ -1,9 +1,16 @@
-import json
 import os
 from collections import defaultdict
+import yaml
+import shutil
 
 import torch
 import torchvision.utils
+
+
+def print_terminal_width_line():
+    terminal_width, _ = shutil.get_terminal_size()
+    line = '=' * terminal_width
+    print(line)
 
 
 def gridify_output(img, row_size=-1):
@@ -15,11 +22,12 @@ def gridify_output(img, row_size=-1):
             2, 1, 0
             )
 
-
-def defaultdict_from_json(jsonDict):
+# 딕셔너리 기본값처리 : 모든 키에 대해 값이 없는 경우 자동으로 기본값 할당 
+# 여기서는 str 로 해놓아서 공백 ""이 기본값으로 들어감
+def defaultdict_from_dict(dict): 
     func = lambda: defaultdict(str)
     dd = func()
-    dd.update(jsonDict)
+    dd.update(dict)
     return dd
 
 
@@ -45,57 +53,30 @@ def load_checkpoint(param, use_checkpoint, device):
         return loaded_model
 
 
-def load_parameters(device):
+def yml_to_dict(args_num):
+    with open(f'./test_args/args{args_num}.yaml') as f:
+        taskdict = yaml.load(f, Loader=yaml.FullLoader)
+    taskdict['arg_num'] = args_num
+    taskdict = defaultdict_from_dict(taskdict)
+    return taskdict
+
+
+def load_parameters(args_num):
     """
     Loads the trained parameters for the detection model
     :return:
     """
-    import sys
+    try:
+        args = yml_to_dict(args_num=args_num)
+    except FileNotFoundError:
+        raise ValueError(f"args{args_num} doesn't exist")
 
-    if len(sys.argv[1:]) > 0:
-        params = sys.argv[1:]
-    else:
-        params = os.listdir("./model")
-    if ".DS_Store" in params:
-        params.remove(".DS_Store")
+    if "noise_fn" not in args:
+        args["noise_fn"] = "gauss"
 
-    if params[0] == "CHECKPOINT":
-        use_checkpoint = True
-        params = params[1:]
-    else:
-        use_checkpoint = False
+    print(f'\nargs{args_num} parameters loaded.\n')
 
-    print(params)
-    for param in params:
-        if param.isnumeric():
-            output = load_checkpoint(param, use_checkpoint, device)
-        elif param[:4] == "args" and param[-5:] == ".json":
-            output = load_checkpoint(param[4:-5], use_checkpoint, device)
-        elif param[:4] == "args":
-            output = load_checkpoint(param[4:], use_checkpoint, device)
-        else:
-            raise ValueError(f"Unsupported input {param}")
-
-        if "args" in output:
-            args = output["args"]
-        else:
-            try:
-                with open(f'./test_args/args{param[17:]}.json', 'r') as f:
-                    args = json.load(f)
-                args['arg_num'] = param[17:]
-                args = defaultdict_from_json(args)
-            except FileNotFoundError:
-                raise ValueError(f"args{param[17:]} doesn't exist for {param}")
-
-        if "noise_fn" not in args:
-            args["noise_fn"] = "gauss"
-
-        return args, output
+    return args
 
 
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':

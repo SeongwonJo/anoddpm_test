@@ -243,7 +243,6 @@ class GaussianDiffusionModel:
 
     def sample_p(self, model, x_t, t, denoise_fn="gauss"):
         out = self.p_mean_variance(model, x_t, t)
-        # noise = torch.randn_like(x_t)
         if type(denoise_fn) == str:
             if denoise_fn == "gauss":
                 noise = torch.randn_like(x_t)
@@ -258,59 +257,60 @@ class GaussianDiffusionModel:
         sample = out["mean"] + nonzero_mask * torch.exp(0.5 * out["log_variance"]) * noise
         return {"sample": sample, "pred_x_0": out["pred_x_0"]}
 
-    # def forward_backward(
-    #         self, model, x, see_whole_sequence="half", t_distance=None, denoise_fn="gauss"
-    #         ):
-    #     assert see_whole_sequence == "whole" or see_whole_sequence == "half" or see_whole_sequence == None
+    def forward_backward(
+            self, model, x, see_whole_sequence="half", t_distance=None, denoise_fn="gauss"
+            ):
+        assert see_whole_sequence == "whole" or see_whole_sequence == "half" or see_whole_sequence == None
 
-    #     if t_distance == 0:
-    #         return x.detach()
+        if t_distance == 0:
+            return x.detach()
 
-    #     if t_distance is None:
-    #         t_distance = self.num_timesteps
-    #     seq = [x.cpu().detach()]
-    #     if see_whole_sequence == "whole":
-    #         # test_matrix = torch.rand(x.shape[0], x.shape[1], device=x.device)
-    #         # test_matrix = torch.randint_like(input=x, low=0, high=t_distance*2)
-    #         # print("start\n","="*30,test_matrix)
-    #         for t in range(int(t_distance)):
-    #             t_batch = torch.tensor([t], device=x.device).repeat(x.shape[0])
-    #             # noise = torch.randn_like(x)
-    #             noise = self.noise_fn(x, t_batch).float()
-    #             # noise = self.noise_fn(x, 11).float()
+        if t_distance is None:
+            t_distance = self.num_timesteps
+        seq = [x.cpu().detach()]
+        if see_whole_sequence == "whole":
+            # test_matrix = torch.rand(x.shape[0], x.shape[1], device=x.device)
+            # test_matrix = torch.randint_like(input=x, low=0, high=t_distance*2)
+            # print("start\n","="*30,test_matrix)
+            for t in range(int(t_distance)):
+                t_batch = torch.tensor([t], device=x.device).repeat(x.shape[0])
+                # noise = torch.randn_like(x)
+                noise = self.noise_fn(x, t_batch).float()
+                # noise = self.noise_fn(x, 11).float()
 
-    #             # noise[control_matrix == 0] = 0
-    #             # control_matrix[control_matrix != 0] -= 1
-    #             # print(test_matrix)
-    #             # test_matrix = torch.tensor([0.1], device=x.device).repeat(x.shape[0]) 
-    #             # noise = torch.mul(noise, test_matrix)
+                # noise[control_matrix == 0] = 0
+                # control_matrix[control_matrix != 0] -= 1
+                # print(test_matrix)
+                # test_matrix = torch.tensor([0.1], device=x.device).repeat(x.shape[0]) 
+                # noise = torch.mul(noise, test_matrix)
 
-    #             with torch.no_grad():
-    #                 x = self.sample_q_gradual(x, t_batch, noise)
+                with torch.no_grad():
+                    x = self.sample_q_gradual(x, t_batch, noise)
 
-    #             # x 와 같은크기의 'one' matrix
+                # x 와 같은크기의 'one' matrix
 
 
-    #             seq.append(x.cpu().detach())
-    #     else:
-    #         # x = self.sample_q(x,torch.tensor([t_distance], device=x.device).repeat(x.shape[0]),torch.randn_like(x))
-    #         t_tensor = torch.tensor([t_distance - 1], device=x.device).repeat(x.shape[0])
-    #         x = self.sample_q(
-    #                 x, t_tensor,
-    #                 self.noise_fn(x, t_tensor).float()
-    #                 )
-    #         if see_whole_sequence == "half":
-    #             seq.append(x.cpu().detach())
+                seq.append(x.cpu().detach())
+        else:
+            # x = self.sample_q(x,torch.tensor([t_distance], device=x.device).repeat(x.shape[0]),torch.randn_like(x))
+            t_tensor = torch.tensor([t_distance - 1], device=x.device).repeat(x.shape[0])
+            x = self.sample_q(
+                    x, t_tensor,
+                    self.noise_fn(x, t_tensor).float()
+                    )
+            if see_whole_sequence == "half":
+                seq.append(x.cpu().detach())
+            seq.append(x.cpu().detach())
 
-    #     for t in range(int(t_distance) - 1, -1, -1):
-    #         t_batch = torch.tensor([t], device=x.device).repeat(x.shape[0])
-    #         with torch.no_grad():
-    #             out = self.sample_p(model, x, t_batch, denoise_fn)
-    #             x = out["sample"]
-    #         if see_whole_sequence:
-    #             seq.append(x.cpu().detach())
+        for t in range(int(t_distance) - 1, -1, -1):
+            t_batch = torch.tensor([t], device=x.device).repeat(x.shape[0])
+            with torch.no_grad():
+                out = self.sample_p(model, x, t_batch, denoise_fn)
+                x = out["sample"]
+            # if see_whole_sequence:
+                seq.append(x.cpu().detach())
 
-    #     return x.detach() if not see_whole_sequence else seq
+        return seq
 
     def my_forward_backward(
             self, model, x, control_matrix, see_whole_sequence="half", t_distance=None, denoise_fn="gauss",
@@ -358,19 +358,19 @@ class GaussianDiffusionModel:
             # x = self.sample_q(x,torch.tensor([t_distance], device=x.device).repeat(x.shape[0]),torch.randn_like(x))
             t_tensor = torch.tensor([t_distance - 1], device=x.device).repeat(x.shape[0])
             ##################################################
-            # x = self.sample_q(
-            #         x, t_tensor, control_matrix,
-            #         self.noise_fn(x, control_matrix).float()
-            #         )
-            ##################################################
-            x = self.sample_q(
-                    x, control_matrix, 
+            x = self.sample_q_my(
+                    x, t_tensor, control_matrix,
                     self.noise_fn(x, control_matrix).float()
                     )
+            ##################################################
+            # x = self.sample_q(
+            #         x, control_matrix, 
+            #         self.noise_fn(x, control_matrix).float()
+            #         )
             
-            # 값이 0이면 -1 로 바꿈
-            x[x == 0] = -1
-            print(x)
+            # # 값이 0이면 -1 로 바꿈
+            # x[x == 0] = -1
+            # print(x)
             ##################################################
             seq.append(x.cpu().detach())
             
@@ -382,23 +382,23 @@ class GaussianDiffusionModel:
             with torch.no_grad():
                 out = self.sample_p(model, x, t_batch, denoise_fn)
                 x = out["sample"]
-            # if see_whole_sequence:
                 seq.append(x.cpu().detach())
 
         # return x.detach() if not see_whole_sequence else seq
         return seq
     
-    # def sample_q(self, x_0, t_x, t_noise, noise):
-    #     """
-    #         q (x_t | x_0 )
+    def sample_q_my(self, x_0, t_x, t_noise, noise):
+        """
+            modified q (x_t | x_0 )
 
-    #         :param x_0:
-    #         :param t:
-    #         :param noise:
-    #         :return:
-    #     """
-    #     return (extract(self.sqrt_alphas_cumprod, t_x, x_0.shape, x_0.device) * x_0 +
-    #             extract(self.sqrt_one_minus_alphas_cumprod, t_noise, x_0.shape, x_0.device) * noise)
+            :param x_0:
+            :param t_x: t for x term
+            :param t_noise: t for noise term
+            :param noise:
+            :return:
+        """
+        return (extract(self.sqrt_alphas_cumprod, t_x, x_0.shape, x_0.device) * x_0 +
+                extract(self.sqrt_one_minus_alphas_cumprod, t_noise, x_0.shape, x_0.device) * noise)
     
     def sample_q(self, x_0, t, noise):
         """
@@ -410,7 +410,7 @@ class GaussianDiffusionModel:
             :return:
         """
         return (
-            # extract(self.sqrt_alphas_cumprod, t, x_0.shape, x_0.device) * x_0 + 
+            extract(self.sqrt_alphas_cumprod, t, x_0.shape, x_0.device) * x_0 + 
                 extract(self.sqrt_one_minus_alphas_cumprod, t, x_0.shape, x_0.device) * noise
                 )
 
@@ -468,14 +468,6 @@ class GaussianDiffusionModel:
                         0, min(args["sample_distance"], self.num_timesteps), (x_0.shape[0],),
                         device=x_0.device
                         )
-        #     elif args["train_start"] == "my":
-        #         args_control_matrix = {
-        # "model": "densenet121_2048",
-        # "pt_path": "/home/seongwon/PycharmProjects/Test_bench_local/cxr_dense2048_n.pt"
-        # }
-        #         control_matrix = make_cam_score(args_control_matrix, "gradcam", x_0)
-        #         control_matrix = np.ceil(control_matrix * self.num_timesteps)
-        #         t = torch.from_numpy(control_matrix, device=x_0.device)
             else:
                 t = torch.randint(0, self.num_timesteps, (x_0.shape[0],), device=x_0.device)
             weights = 1
@@ -486,46 +478,46 @@ class GaussianDiffusionModel:
         loss = ((loss["loss"] * weights).mean(), (loss, x_t, eps_t))
         return loss
 
-    def prior_vlb(self, x_0, args):
-        t = torch.tensor([self.num_timesteps - 1] * args["Batch_Size"], device=x_0.device)
-        qt_mean, _, qt_log_variance = self.q_mean_variance(x_0, t)
-        kl_prior = normal_kl(
-                mean1=qt_mean, logvar1=qt_log_variance, mean2=torch.tensor(0.0, device=x_0.device),
-                logvar2=torch.tensor(0.0, device=x_0.device)
-                )
-        return mean_flat(kl_prior) / np.log(2.0)
+    # def prior_vlb(self, x_0, args):
+    #     t = torch.tensor([self.num_timesteps - 1] * args["Batch_Size"], device=x_0.device)
+    #     qt_mean, _, qt_log_variance = self.q_mean_variance(x_0, t)
+    #     kl_prior = normal_kl(
+    #             mean1=qt_mean, logvar1=qt_log_variance, mean2=torch.tensor(0.0, device=x_0.device),
+    #             logvar2=torch.tensor(0.0, device=x_0.device)
+    #             )
+    #     return mean_flat(kl_prior) / np.log(2.0)
 
-    def calc_total_vlb(self, x_0, model, args):
-        vb = []
-        x_0_mse = []
-        mse = []
-        for t in reversed(list(range(self.num_timesteps))):
-            t_batch = torch.tensor([t] * args["Batch_Size"], device=x_0.device)
-            noise = torch.randn_like(x_0)
-            x_t = self.sample_q(x_0=x_0, t=t_batch, noise=noise)
-            # Calculate VLB term at the current timestep
-            with torch.no_grad():
-                out = self.calc_vlb_xt(
-                        model,
-                        x_0=x_0,
-                        x_t=x_t,
-                        t=t_batch,
-                        )
-            vb.append(out["output"])
-            x_0_mse.append(mean_flat((out["pred_x_0"] - x_0) ** 2))
-            eps = self.predict_eps_from_x_0(x_t, t_batch, out["pred_x_0"])
-            mse.append(mean_flat((eps - noise) ** 2))
+    # def calc_total_vlb(self, x_0, model, args):
+    #     vb = []
+    #     x_0_mse = []
+    #     mse = []
+    #     for t in reversed(list(range(self.num_timesteps))):
+    #         t_batch = torch.tensor([t] * args["Batch_Size"], device=x_0.device)
+    #         noise = torch.randn_like(x_0)
+    #         x_t = self.sample_q(x_0=x_0, t=t_batch, noise=noise)
+    #         # Calculate VLB term at the current timestep
+    #         with torch.no_grad():
+    #             out = self.calc_vlb_xt(
+    #                     model,
+    #                     x_0=x_0,
+    #                     x_t=x_t,
+    #                     t=t_batch,
+    #                     )
+    #         vb.append(out["output"])
+    #         x_0_mse.append(mean_flat((out["pred_x_0"] - x_0) ** 2))
+    #         eps = self.predict_eps_from_x_0(x_t, t_batch, out["pred_x_0"])
+    #         mse.append(mean_flat((eps - noise) ** 2))
 
-        vb = torch.stack(vb, dim=1)
-        x_0_mse = torch.stack(x_0_mse, dim=1)
-        mse = torch.stack(mse, dim=1)
+    #     vb = torch.stack(vb, dim=1)
+    #     x_0_mse = torch.stack(x_0_mse, dim=1)
+    #     mse = torch.stack(mse, dim=1)
 
-        prior_vlb = self.prior_vlb(x_0, args)
-        total_vlb = vb.sum(dim=1) + prior_vlb
-        return {
-            "total_vlb": total_vlb,
-            "prior_vlb": prior_vlb,
-            "vb":        vb,
-            "x_0_mse":   x_0_mse,
-            "mse":       mse,
-            }
+    #     prior_vlb = self.prior_vlb(x_0, args)
+    #     total_vlb = vb.sum(dim=1) + prior_vlb
+    #     return {
+    #         "total_vlb": total_vlb,
+    #         "prior_vlb": prior_vlb,
+    #         "vb":        vb,
+    #         "x_0_mse":   x_0_mse,
+    #         "mse":       mse,
+    #         }
