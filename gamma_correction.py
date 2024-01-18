@@ -3,13 +3,6 @@ import cv2
 import os
 import argparse
 
-# img = cv2.imread("../NORMAL-6433176-0001.jpeg")
-
-#
-# path = "D:/chest-xray/chest_xray2/train/(resize)/test/"
-# save_path = "D:/chest-xray/chest_xray2/train/(resize)/noise_test/"
-# img_list = os.listdir(path)
-
 
 def make_img_list(path):
     img_list = os.listdir(path)
@@ -27,16 +20,10 @@ def gamma_correction(image, gamma=0.5):
 
     return result
 
-# result = gamma_correction(img)
-
-# cv2.imshow("gamma correction", result)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='PyTorch Image Classification')
+    parser = argparse.ArgumentParser()
     parser.add_argument('-p', "--path", required=True, default="./temp/")
     parser.add_argument('-s', "--save_path", required=True, default="./temp/")
     parser.add_argument('-g', "--gamma", default=1.0, type=float)
