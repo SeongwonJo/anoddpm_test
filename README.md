@@ -2,11 +2,13 @@
 
 Pneumonia Treatment Progress Prediction using Diffusion Model 
 
-
+<br><br><br>
 
 ## Usage
 
 examples
+<br><br>
+
 
 ### Training
 
@@ -30,19 +32,19 @@ python diffusion_training.py -y <num> -i <image folder path> -d <device> -r <res
     python diffusion_training.py -y 1 -i ../data/chest_xray/train/NORMAL/
     ```
 
-    
+<br><br>   
 
 ## Generate image
 
 ```
-python generate_images.py -y <num> -i <image folder path> -d <device> -p <pt file path> -m <model name> -l <lambda list> --use_control_matrix
+python generate_images.py -y <num> -i <image folder path> -d <device> -l <lambda list> -p <pt file path> -m <model name> --use_control_matrix
 ```
 
 - 모델의 파라미터 관련 옵션은 test_args 폴더에 args1.yaml 과 같이 yaml 파일로 저장하여 사용
 
 - -y  :  args\<num>.yaml 의 숫자를 입력
 
-- -i  :  학습용 이미지 폴더의 경로 (이 프로젝트에서는 학습시 정상 폐의 방사선 이미지만 사용)
+- -i  :  사용할 이미지 폴더의 경로
 
 - -d  :  사용할 gpu 설정 (기본값 = cuda:0)
 
@@ -73,9 +75,17 @@ python generate_images.py -y <num> -i <image folder path> -d <device> -p <pt fil
       - densenet121_2048
         - fc layer 길이를 2048 로 늘린 모델
 
+- 예시
 
+  - ```
+    python generate_image.py -y 1 -i ../data/chest_xray/test/PNEUMONIA/ -l 200,300,400
+    ```
+    
+  - ```
+    python generate_image.py -y 1 -i ../data/chest_xray/test/PNEUMONIA/ -l 200,300,400 -p ./resnet152.pt -m resnet152 --use_control_matrix
+    ```
 
-
+<br><br>
 
 
 
@@ -84,7 +94,7 @@ python generate_images.py -y <num> -i <image folder path> -d <device> -p <pt fil
 
 
 
-
+<br><br>
 
 
 ### Reference
