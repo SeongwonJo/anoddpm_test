@@ -1,15 +1,8 @@
-"""
-Output varying figures for paper
-"""
-
-# import random
-# import imageio
-# import sys
 import os
 
 import argparse
 
-from matplotlib import animation, font_manager
+from matplotlib import font_manager
 import matplotlib.pyplot as plt
 
 import torch
@@ -94,34 +87,12 @@ def main():
     unet.load_state_dict(output["ema"])
     unet.to(device)
     unet.eval()
-    # if args["dataset"].lower() == "leather":
-    #     d_set = dataset.MVTec(
-    #             "../dataset/mvtec/leather", anomalous=True, img_size=args["img_size"],
-    #             rgb=True, include_good=False
-    #             )
-    # elif args["dataset"].lower() == "custom":
-    #     d_set = dataset.custom(
-    #             "../data/chest_xray/test/PNEUMONIA/", anomalous=False, img_size=args["img_size"],
-    #             rgb=False, e_aug = False
-    #             )
-    #     # d_set = dataset.custom(
-    #     #         "./temp/cxr_sample/", anomalous=False, img_size=args["img_size"],
-    #     #         rgb=False, e_aug = False
-    #     #         )
-    # elif args["dataset"].lower() == "snu_he":
-    #     d_set = dataset.custom(
-    #             "../data/snu_he/PNEUMONIA/", anomalous=False, img_size=args["img_size"],
-    #             rgb=False,
-    #             )
+    
     d_set = dataset.custom(
         argparse.image_path, img_size=args["img_size"], rgb=False)
 
     loader = dataset.init_dataset_loader(d_set, args)
 
-    # args_control_matrix = {
-    #     "model": "resnet152",
-    #     "pt_path": "/home/seongwon/PycharmProjects/Test_bench/snuhe_resnet152_gamma.pt"
-    #     }
     if argparse.use_control_matrix:
         args_control_matrix = {
             "model": argparse.model,
@@ -169,26 +140,13 @@ def main():
                 print("\nget cam score ...")
                 control_matrix = make_cam_score(args_control_matrix, "gradcam", img) # args, method, target_img
                 print("\n control matrix",control_matrix.shape)
-                # print("\n", control_matrix, "\n")
-                # print(torch.max(control_matrix))
                 control_matrix = np.floor(control_matrix * t_distance)
-                # control_matrix = torch.where(control_matrix < t_distance / 2, t_distance / 2, control_matrix )
-                # print(torch.max(control_matrix))
-                # print(torch.min(control_matrix))
-                # test = torch.where(control_matrix == 0, 9999, control_matrix)
-                # print(torch.max(test))
-                # print(torch.min(test))
-                # print(test)
-                # print(torch.bincount(control_matrix)[0])
-                # print(control_matrix)
-
 
                 print("\nperform diffusion ...")
                 # perform diffusion
                 output = diff.my_forward_backward(
                         unet, img, control_matrix=control_matrix.type(torch.int64),
                         see_whole_sequence=seq_setting,
-                        # t_distance=5, denoise_fn=args["noise_fn"]
                         t_distance=t_distance, denoise_fn=args["noise_fn"]
                         )
             else:
@@ -197,7 +155,6 @@ def main():
                 output = diff.forward_backward(
                         unet, img,
                         see_whole_sequence=seq_setting,
-                        # t_distance=5, denoise_fn=args["noise_fn"]
                         t_distance=t_distance, denoise_fn=args["noise_fn"]
                         )
 

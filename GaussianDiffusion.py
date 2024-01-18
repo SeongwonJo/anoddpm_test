@@ -1,10 +1,9 @@
 # https://github.com/openai/guided-diffusion/tree/27c20a8fab9cb472df5d6bdd6c8d11c8f430b924
-import random
+# import random
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-import evaluation
 from helpers import *
 from get_cam_score import make_cam_score
 
@@ -269,30 +268,13 @@ class GaussianDiffusionModel:
             t_distance = self.num_timesteps
         seq = [x.cpu().detach()]
         if see_whole_sequence == "whole":
-            # test_matrix = torch.rand(x.shape[0], x.shape[1], device=x.device)
-            # test_matrix = torch.randint_like(input=x, low=0, high=t_distance*2)
-            # print("start\n","="*30,test_matrix)
             for t in range(int(t_distance)):
                 t_batch = torch.tensor([t], device=x.device).repeat(x.shape[0])
-                # noise = torch.randn_like(x)
                 noise = self.noise_fn(x, t_batch).float()
-                # noise = self.noise_fn(x, 11).float()
-
-                # noise[control_matrix == 0] = 0
-                # control_matrix[control_matrix != 0] -= 1
-                # print(test_matrix)
-                # test_matrix = torch.tensor([0.1], device=x.device).repeat(x.shape[0]) 
-                # noise = torch.mul(noise, test_matrix)
-
                 with torch.no_grad():
                     x = self.sample_q_gradual(x, t_batch, noise)
-
-                # x 와 같은크기의 'one' matrix
-
-
                 seq.append(x.cpu().detach())
         else:
-            # x = self.sample_q(x,torch.tensor([t_distance], device=x.device).repeat(x.shape[0]),torch.randn_like(x))
             t_tensor = torch.tensor([t_distance - 1], device=x.device).repeat(x.shape[0])
             x = self.sample_q(
                     x, t_tensor,
@@ -317,8 +299,6 @@ class GaussianDiffusionModel:
             ):
         assert see_whole_sequence == "whole" or see_whole_sequence == "half" or see_whole_sequence == None
 
-        # self.control_matrix_b = control_matrix.clone()
-
         if t_distance == 0:
             return x.detach()
 
@@ -326,52 +306,23 @@ class GaussianDiffusionModel:
             t_distance = self.num_timesteps
         seq = [x.cpu().detach()]
         if see_whole_sequence == "whole":
-            # test_matrix = torch.rand(x.shape[0], x.shape[1], device=x.device)
-            # test_matrix = torch.randint_like(input=x, low=0, high=t_distance*2)
-            # print("start\n","="*30,test_matrix)
             for t in range(int(t_distance)):
                 t_batch = torch.tensor([t], device=x.device).repeat(x.shape[0])
-                # noise = torch.randn_like(x)
                 noise = self.noise_fn(x, t_batch).float()
-                # noise = self.noise_fn(x, 11).float()
-
                 noise[control_matrix == 0] = 0
                 control_matrix[control_matrix != 0] -= 1
-                # if t == t_distance / 2:
-                #     print("="*50)
-                #     print(torch.min(noise))
-                #     print(torch.min(control_matrix))
-                #     print(torch.max(control_matrix))
-                #     print("="*50)
-                # print(test_matrix)
-                # test_matrix = torch.tensor([0.1], device=x.device).repeat(x.shape[0]) 
-                # noise = torch.mul(noise, test_matrix)
 
                 with torch.no_grad():
                     x = self.sample_q_gradual(x, t_batch, noise)
 
-                # x 와 같은크기의 'one' matrix
-
-
                 seq.append(x.cpu().detach())
         else:
-            # x = self.sample_q(x,torch.tensor([t_distance], device=x.device).repeat(x.shape[0]),torch.randn_like(x))
             t_tensor = torch.tensor([t_distance - 1], device=x.device).repeat(x.shape[0])
-            ##################################################
             x = self.sample_q_my(
                     x, t_tensor, control_matrix,
                     self.noise_fn(x, control_matrix).float()
                     )
-            ##################################################
-            # x = self.sample_q(
-            #         x, control_matrix, 
-            #         self.noise_fn(x, control_matrix).float()
-            #         )
             
-            # # 값이 0이면 -1 로 바꿈
-            # x[x == 0] = -1
-            # print(x)
-            ##################################################
             seq.append(x.cpu().detach())
             
             if see_whole_sequence == "half":
@@ -384,7 +335,6 @@ class GaussianDiffusionModel:
                 x = out["sample"]
                 seq.append(x.cpu().detach())
 
-        # return x.detach() if not see_whole_sequence else seq
         return seq
     
     def sample_q_my(self, x_0, t_x, t_noise, noise):
@@ -477,47 +427,3 @@ class GaussianDiffusionModel:
         loss, x_t, eps_t = self.calc_loss(model, x_0, t)
         loss = ((loss["loss"] * weights).mean(), (loss, x_t, eps_t))
         return loss
-
-    # def prior_vlb(self, x_0, args):
-    #     t = torch.tensor([self.num_timesteps - 1] * args["Batch_Size"], device=x_0.device)
-    #     qt_mean, _, qt_log_variance = self.q_mean_variance(x_0, t)
-    #     kl_prior = normal_kl(
-    #             mean1=qt_mean, logvar1=qt_log_variance, mean2=torch.tensor(0.0, device=x_0.device),
-    #             logvar2=torch.tensor(0.0, device=x_0.device)
-    #             )
-    #     return mean_flat(kl_prior) / np.log(2.0)
-
-    # def calc_total_vlb(self, x_0, model, args):
-    #     vb = []
-    #     x_0_mse = []
-    #     mse = []
-    #     for t in reversed(list(range(self.num_timesteps))):
-    #         t_batch = torch.tensor([t] * args["Batch_Size"], device=x_0.device)
-    #         noise = torch.randn_like(x_0)
-    #         x_t = self.sample_q(x_0=x_0, t=t_batch, noise=noise)
-    #         # Calculate VLB term at the current timestep
-    #         with torch.no_grad():
-    #             out = self.calc_vlb_xt(
-    #                     model,
-    #                     x_0=x_0,
-    #                     x_t=x_t,
-    #                     t=t_batch,
-    #                     )
-    #         vb.append(out["output"])
-    #         x_0_mse.append(mean_flat((out["pred_x_0"] - x_0) ** 2))
-    #         eps = self.predict_eps_from_x_0(x_t, t_batch, out["pred_x_0"])
-    #         mse.append(mean_flat((eps - noise) ** 2))
-
-    #     vb = torch.stack(vb, dim=1)
-    #     x_0_mse = torch.stack(x_0_mse, dim=1)
-    #     mse = torch.stack(mse, dim=1)
-
-    #     prior_vlb = self.prior_vlb(x_0, args)
-    #     total_vlb = vb.sum(dim=1) + prior_vlb
-    #     return {
-    #         "total_vlb": total_vlb,
-    #         "prior_vlb": prior_vlb,
-    #         "vb":        vb,
-    #         "x_0_mse":   x_0_mse,
-    #         "mse":       mse,
-    #         }
