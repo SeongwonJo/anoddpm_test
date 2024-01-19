@@ -29,13 +29,18 @@ if __name__ == '__main__':
     parser.add_argument('-g', "--gamma", default=1.0, type=float)
     args = parser.parse_args()
 
+    try:
+        os.makedirs(f'{args.save_path}')
+    except OSError:
+        pass
+
     img_list = make_img_list(args.path)
 
     for img in img_list:
         x = cv2.imread(args.path + img)
         x_g = gamma_correction(x, args.gamma)
 
-        cv2.imwrite(args.save_path + img, x_g)
+        cv2.imwrite(args.save_path + '/' + img, x_g)
 
 
 

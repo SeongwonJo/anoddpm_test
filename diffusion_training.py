@@ -250,7 +250,6 @@ def main():
     # make arg specific directories
     for i in [f'./model/diff-params-ARGS={argparse.yml_num}',
               f'./model/diff-params-ARGS={argparse.yml_num}/checkpoint',
-              f'./diffusion-videos/ARGS={argparse.yml_num}',
               f'./diffusion-training-images/ARGS={argparse.yml_num}']:
         try:
             os.makedirs(i)
@@ -288,11 +287,14 @@ def main():
     train(training_dataset, args, loaded_model, device=device)
 
     # remove checkpoints after final_param is saved (due to storage requirements)
-    for file_remove in os.listdir(f'./model/diff-params-ARGS={argparse.yml_num}/checkpoint'):
-        os.remove(os.path.join(f'./model/diff-params-ARGS={argparse.yml_num}/checkpoint', file_remove))
-    os.removedirs(f'./model/diff-params-ARGS={argparse.yml_num}/checkpoint')
+    # for file_remove in os.listdir(f'./model/diff-params-ARGS={argparse.yml_num}/checkpoint'):
+    #     os.remove(os.path.join(f'./model/diff-params-ARGS={argparse.yml_num}/checkpoint', file_remove))
+    # os.removedirs(f'./model/diff-params-ARGS={argparse.yml_num}/checkpoint')
 
 
 if __name__ == '__main__':
+    start = time.time()
 
     main()
+
+    print(f"training script done: {time.time() - start_time:.2f}s")

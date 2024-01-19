@@ -1,6 +1,6 @@
-import os
+# import os
 import argparse
-import cv2
+# import cv2
 import numpy as np
 import torch
 import torch.nn as nn
@@ -10,11 +10,11 @@ from torchvision.transforms import Compose, Normalize, ToTensor
 from pytorch_grad_cam import GradCAM, GradCAMPlusPlus
 
 
-from pytorch_grad_cam import GuidedBackpropReLUModel
-from pytorch_grad_cam.utils.image import show_cam_on_image, \
-    deprocess_image, \
-    preprocess_image
-from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+# from pytorch_grad_cam import GuidedBackpropReLUModel
+# from pytorch_grad_cam.utils.image import show_cam_on_image, \
+#     deprocess_image, \
+#     preprocess_image
+# from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
 import densenet_1ch
 
@@ -73,9 +73,6 @@ def make_cam_score(arguments, method, target_img):
 
     model = models[arguments["model"]]
 
-    # model = resnet.resnet50(pretrained=True)
-    # model = torch.load("../Test_bench/cxr_densenet.pt")
-
     if arguments["model"][0:6] == "resnet":
         model.conv1 = nn.Conv2d(
             1, 64, kernel_size=7, stride=2, padding=3, bias=False
@@ -105,8 +102,6 @@ def make_cam_score(arguments, method, target_img):
     elif arguments["model"][0:8] == "densenet":
         target_layers = [model.features.denseblock4]
 
-    # img = cv2.imread(args.image_path, 1)[:, :, ::-1]
-    # img = cv2.imread(target_img, 0)
     img = target_img.clone().detach()
     print("\n get image to cam score", img.shape)
     img = img / 255

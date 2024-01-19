@@ -2,6 +2,9 @@ import os
 from collections import defaultdict
 import yaml
 import shutil
+import matplotlib.pyplot as plt
+import glob
+import cv2
 
 import torch
 import torchvision.utils
@@ -78,5 +81,45 @@ def load_parameters(args_num):
 
     return args
 
+
+def make_table(lamb_list, path):
+    xlabels = ["Original"]
+    folders = [f'{path}/in/']
+
+    for l in lamb_list:
+        xlabels.append(f"λ={l}")
+        folders.append(f'{path}/images_{l}/out/')
+    # xlabels = ["Original", "λ=200", "λ=300", "λ=400", "λ=500", "λ=600"]
+    # folders = ['ARGS=33/images_200/in/',
+    #            'ARGS=33/images_200/out/',
+    #            'ARGS=33/images_300/out/',
+    #            'ARGS=33/images_400/out/',
+    #            'ARGS=33/images_500/out/',
+    #            'ARGS=33/images_600/out/']
+
+    rows = len(xlabels)
+    cols = len(folders)
+    num_images = len(glob.glob(folders[0] + "*.png"))
+
+    i = 1
+    j = 0
+    fig = plt.figure(figsize=(6, 8))  # rows*cols 행렬의 i번째 subplot 생성
+    for folder in folders:
+        # print(folder)
+        for filename in sorted(glob.glob(folder + "*.png")):
+            img = cv2.imread(filename)
+            # print(filename)
+            ax = fig.add_subplot(rows, cols, i)
+            ax.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            if i % cols == 1:
+                ax.set_ylabel(xlabels[j])
+                j += 1
+            ax.set_xticks([]), ax.set_yticks([])
+            i += 1
+
+    plt.savefig(f'{path}/result.png', dpi=200)
+    plt.clf()
+    plt.close()
+        
 
 # if __name__ == '__main__':
