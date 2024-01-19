@@ -78,11 +78,11 @@ python generate_images.py -y <num> -i <image folder path> -d <device> -l <lambda
 - 예시
 
   - ```
-    python generate_image.py -y 1 -i ../data/chest_xray/test/PNEUMONIA/ -l 200,300,400
+    python generate_images.py -y 1 -i ../data/chest_xray/test/PNEUMONIA/ -l 200,300,400
     ```
     
   - ```
-    python generate_image.py -y 1 -i ../data/chest_xray/test/PNEUMONIA/ -l 200,300,400 -p ./resnet152.pt -m resnet152 --use_control_matrix
+    python generate_images.py -y 1 -i ../data/chest_xray/test/PNEUMONIA/ -l 200,300,400 -p ./resnet152.pt -m resnet152 --use_control_matrix
     ```
 
 <br><br>
