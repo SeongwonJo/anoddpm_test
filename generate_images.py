@@ -153,7 +153,7 @@ def main(argparse):
                     )
             
             output_name2 = f'./final-outputs/ARGS={args["arg_num"]}/images_{t_distance}'
-            output_name3 = f'/attempt={len(temp2)}'
+            output_name3 = f'/attempt={i}'
 
             # save gif (when --seq_setting "whole")
             # print("\nsaving gif ... \n")

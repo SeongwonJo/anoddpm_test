@@ -142,7 +142,7 @@ def train(training_dataset, args, resume, device):
             print(f"\nSampling image saved... time taken {time_taken:.2f}s\n")
         
 
-        if epoch % 1000 == 0 and epoch >= 0:
+        if epoch % 10 == 0 and epoch >= 0:
             save(unet=model, args=args, optimizer=optimizer, final=False, ema=ema, epoch=epoch)
 
     save(unet=model, args=args, optimizer=optimizer, ema=ema, final=True)
@@ -153,7 +153,7 @@ def save(final, unet, optimizer, args, ema, loss=0, epoch=0):
     Save model final or checkpoint
     :param final: bool for final vs checkpoint
     :param unet: unet instance
-    :param optimiser: ADAM optim
+    :param optimizer: optimizer instance
     :param args: model parameters
     :param ema: ema instance
     :param loss: loss for checkpoint
@@ -276,12 +276,16 @@ def main():
                 try:
                     file_dir = f"./model/diff-params-ARGS={argparse.yml_num}/checkpoint/{i}"
                     loaded_model = torch.load(file_dir, map_location=device)
+
+                    print(f"\n'./model/diff-params-ARGS={argparse.yml_num}/checkpoint/{i}' loaded.")
                     break
                 except RuntimeError:
                     continue
         else:
             file_dir = argparse.resume
             loaded_model = torch.load(file_dir, map_location=device)
+            print(f"\n'{argparse.resume}' loaded.")
+
 
     # load, pass args
     train(training_dataset, args, loaded_model, device=device)
@@ -297,4 +301,4 @@ if __name__ == '__main__':
 
     main()
 
-    print(f"training script done: {time.time() - start_time:.2f}s")
+    print(f"training script done: {time.time() - start:.2f}s")
